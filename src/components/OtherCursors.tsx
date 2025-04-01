@@ -10,7 +10,6 @@ interface OtherCursorsProps {
 export function OtherCursors({ userId }: OtherCursorsProps) {
   // Get list of active users
   const activeUsers = useQuery(api.users.getActiveUsers);
-
   if (!activeUsers) return null;
 
   return (

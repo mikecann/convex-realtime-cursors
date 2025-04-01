@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback, useState } from "react";
+import { useEffect, useRef } from "react";
 import { Doc, Id } from "../../convex/_generated/dataModel";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
@@ -12,6 +12,8 @@ export function RemoteCursor({ userId }: RemoteCursorProps) {
   // Refs for tracking state
   const containerRef = useRef<HTMLDivElement>(null);
   const batchQueueRef = useRef<Doc<"cursorBatches">[]>([]);
+  const currentBatchRef = useRef<Doc<"cursorBatches"> | null>(null);
+  const batchStartTimeRef = useRef<number>(0);
 
   const user = useQuery(api.users.getUser, { userId });
   const cursorBatch = useQuery(api.cursors.getCursorBatch, { userId });
@@ -20,44 +22,45 @@ export function RemoteCursor({ userId }: RemoteCursorProps) {
   useEffect(() => {
     if (!cursorBatch) return;
     batchQueueRef.current.push(cursorBatch);
-    console.log(`batch changed`, user?.name, cursorBatch);
-  }, [cursorBatch, user?.name]);
+  }, [cursorBatch]);
 
   // Animation loop using our custom hook
   useAnimationFrame(() => {
     if (!containerRef.current) return;
 
-    let currentBatch: Doc<"cursorBatches"> | null = null;
-    let batchStartTime = Date.now();
-
-    // If we arent working on a batch
-    if (currentBatch == null) {
-      // And there is nothing in the queue, we dont need to do anything
+    // If we aren't working on a batch
+    if (currentBatchRef.current === null) {
+      // And there is nothing in the queue, we don't need to do anything
       if (batchQueueRef.current.length === 0) return;
 
       // Otherwise, get the first batch from the queue
-      currentBatch = batchQueueRef.current.shift()!;
+      currentBatchRef.current = batchQueueRef.current.shift()!;
 
       // And record when we start it
-      batchStartTime = Date.now();
+      batchStartTimeRef.current = Date.now();
     }
 
     // Otherwise, we are working on a batch
     // So we need to check if any of the movements are due to be played
-    const elapsed = Date.now() - batchStartTime;
-    const movements = currentBatch.movements;
+    const elapsed = Date.now() - batchStartTimeRef.current;
+    const currentBatch = currentBatchRef.current;
 
-    while (movements.length > 0) {
-      const movement = movements.shift();
-      if (!movement) continue;
-      if (movement.timeSinceBatchStart > elapsed) break;
-      // Update the cursor position
+    // Process movements that are due
+    while (currentBatch.movements.length > 0) {
+      // Check if its time to action on this yet
+      const movement = currentBatch.movements[0];
+      if (Math.min(movement.timeSinceBatchStart, 1000) > elapsed) break;
+
+      // Remove this movement from the array
+      currentBatch.movements.shift();
+
+      // Update the cursor position with the latest movement
       containerRef.current.style.left = `${movement.x}px`;
       containerRef.current.style.top = `${movement.y}px`;
     }
 
     // If we have no movements left, we are done with this batch
-    if (movements.length === 0) currentBatch = null;
+    if (currentBatch.movements.length === 0) currentBatchRef.current = null;
   }, []);
 
   if (!user) return null;

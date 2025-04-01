@@ -15,11 +15,14 @@ interface CursorPosition {
   timeSinceBatchStart: number;
 }
 
+const SAMPLING_INTERVAL_MS = 10; // Sample every 5ms
+
 export function MyCursor({ userId, emoji, name }: MyCursorProps) {
   // Refs for DOM and cursor state
   const cursorRef = useRef<HTMLDivElement>(null);
   const movementBatchRef = useRef<CursorPosition[]>([]);
   const batchStartTime = useRef<number>(Date.now());
+  const lastSampleTime = useRef<number>(0);
 
   // Convex mutation
   const storeCursorBatch = useMutation(api.cursors.storeCursorBatch);
@@ -29,18 +32,24 @@ export function MyCursor({ userId, emoji, name }: MyCursorProps) {
     if (!cursorRef.current) return;
 
     const handleMouseMove = (e: MouseEvent) => {
-      const newPosition = {
-        x: e.clientX,
-        y: e.clientY,
-        timeSinceBatchStart: Date.now() - batchStartTime.current,
-      };
-
-      // Update cursor position
+      // Always update the cursor position
       cursorRef.current!.style.left = `${e.clientX}px`;
       cursorRef.current!.style.top = `${e.clientY}px`;
 
+      const now = Date.now();
+
+      // If the last sample was too recent, don't add this one to the batch
+      if (now - lastSampleTime.current < SAMPLING_INTERVAL_MS) return;
+
+      // Update last sample time
+      lastSampleTime.current = now;
+
       // Add to movement batch
-      movementBatchRef.current.push(newPosition);
+      movementBatchRef.current.push({
+        x: e.clientX,
+        y: e.clientY,
+        timeSinceBatchStart: now - batchStartTime.current,
+      });
     };
 
     window.addEventListener("mousemove", handleMouseMove);
@@ -50,9 +59,11 @@ export function MyCursor({ userId, emoji, name }: MyCursorProps) {
   // Send batched cursor movements every second
   useEffect(() => {
     const sendBatchInterval = setInterval(() => {
-      if (movementBatchRef.current.length == 0) return;
+      // Always reset the batch start time each tick
+      batchStartTime.current = Date.now();
 
-      console.log(`storing..`, movementBatchRef.current);
+      // If nothing in the batch we dont need to send anything
+      if (movementBatchRef.current.length == 0) return;
 
       // Send the batch to the server
       storeCursorBatch({
@@ -62,7 +73,6 @@ export function MyCursor({ userId, emoji, name }: MyCursorProps) {
 
       // Clear the batch
       movementBatchRef.current = [];
-      batchStartTime.current = Date.now();
     }, 1000);
 
     return () => clearInterval(sendBatchInterval);
