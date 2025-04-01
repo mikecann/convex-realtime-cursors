@@ -10,8 +10,6 @@ export const createUser = mutation({
     const userId = await ctx.db.insert("users", {
       name: args.name,
       emoji: args.emoji,
-      cursorX: 0,
-      cursorY: 0,
       lastUpdate: Date.now(),
     });
     return { userId };
@@ -26,8 +24,6 @@ export const updateCursor = mutation({
   },
   handler: async (ctx, args) => {
     await ctx.db.patch(args.userId, {
-      cursorX: args.cursorX,
-      cursorY: args.cursorY,
       lastUpdate: Date.now(),
     });
   },
@@ -45,7 +41,7 @@ export const getUser = query({
 export const getActiveUsers = query({
   args: {},
   handler: async (ctx) => {
-    // Get users who have moved their cursor in the last 30 seconds
+    // Get users who have been active in the last 30 seconds
     const thirtySecondsAgo = Date.now() - 30_000;
     return await ctx.db
       .query("users")

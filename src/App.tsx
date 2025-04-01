@@ -1,21 +1,47 @@
-import { useState } from "react";
-import { useQuery } from "convex/react";
+import { useState, useEffect } from "react";
+import { useQueries, useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { UserSetup } from "./components/UserSetup";
 import { Canvas } from "./components/Canvas";
 import { Id } from "../convex/_generated/dataModel";
+import { makeUseQueryWithStatus } from "convex-helpers/react";
+
+export const useQueryWithStatus = makeUseQueryWithStatus(useQueries);
+
+const STORAGE_KEY = "canvas_user_id";
 
 export default function App() {
-  const [userId, setUserId] = useState<Id<"users"> | null>(null);
-  const user = useQuery(api.users.getUser, userId ? { userId } : "skip");
+  const [userId, setUserId] = useState<Id<"users"> | null>(() => {
+    // Try to get userId from localStorage during intialization
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return stored ? (stored as Id<"users">) : null;
+  });
 
-  const handleUserSetupComplete = (newUserId: Id<"users">) => {
-    setUserId(newUserId);
-  };
+  const { data: user, error } = useQueryWithStatus(
+    api.users.getUser,
+    userId ? { userId } : "skip",
+  );
 
-  if (!userId || !user) {
-    return <UserSetup onComplete={handleUserSetupComplete} />;
+  useEffect(() => {
+    if (!error) return;
+    console.error(`error while getting user, resetting`, error);
+    localStorage.removeItem(STORAGE_KEY);
+    window.location.reload();
+  }, [error]);
+
+  if (!userId) {
+    return (
+      <UserSetup
+        onComplete={(newUserId: Id<"users">) => {
+          // Store the new userId in localStorage
+          localStorage.setItem(STORAGE_KEY, newUserId);
+          setUserId(newUserId);
+        }}
+      />
+    );
   }
+
+  if (!user) return <div>Loading...</div>;
 
   return <Canvas userId={userId} emoji={user.emoji} name={user.name} />;
 }

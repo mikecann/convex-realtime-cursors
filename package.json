@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "convex": "^1.21.0",
+    "convex-helpers": "^0.1.76",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

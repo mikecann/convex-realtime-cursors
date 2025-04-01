@@ -12,12 +12,11 @@ export default defineSchema({
       }),
     ),
     batchTimestamp: v.number(),
-  }),
+  }).index("by_userId", ["userId"]),
+
   users: defineTable({
     name: v.string(),
     emoji: v.string(),
-    cursorX: v.number(),
-    cursorY: v.number(),
     lastUpdate: v.number(),
   }),
 });
