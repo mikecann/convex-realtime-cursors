@@ -8,63 +8,41 @@ export const storeCursorBatch = mutation({
       v.object({
         x: v.number(),
         y: v.number(),
-        timestamp: v.number(),
+        timeSinceBatchStart: v.number(),
       }),
     ),
   },
   handler: async (ctx, args) => {
-    // Update user's last activity time
-    await ctx.db.patch(args.userId, {
-      lastUpdate: Date.now(),
-    });
-
     // Find existing batch for this user
     const existingBatch = await ctx.db
       .query("cursorBatches")
       .withIndex("by_userId", (q) => q.eq("userId", args.userId))
       .unique();
 
-    const now = Date.now();
-
-    if (existingBatch) {
+    if (existingBatch)
       // Replace existing batch with new one
-      await ctx.db.patch(existingBatch._id, {
+      return await ctx.db.patch(existingBatch._id, {
         movements: args.movements,
-        batchTimestamp: now,
+        batchTimestamp: Date.now(),
       });
-    } else {
-      // Create a new batch if none exists
-      await ctx.db.insert("cursorBatches", {
-        userId: args.userId,
-        movements: args.movements,
-        batchTimestamp: now,
-      });
-    }
+
+    // Create a new batch if none exists
+    await ctx.db.insert("cursorBatches", {
+      userId: args.userId,
+      movements: args.movements,
+      batchTimestamp: Date.now(),
+    });
   },
 });
 
-export const getRecentCursorBatches = query({
+export const getCursorBatch = query({
   args: {
-    lastProcessedTimestamps: v.optional(v.record(v.id("users"), v.number())),
+    userId: v.id("users"),
   },
   handler: async (ctx, args) => {
-    // Get all cursor batches
-    const batches = await ctx.db.query("cursorBatches").collect();
-
-    // If no processed timestamps provided, return all batches
-    if (!args.lastProcessedTimestamps) {
-      return batches;
-    }
-
-    // Filter out batches that the client has already processed
-    return batches.filter((batch) => {
-      // Get the last processed timestamp for this user
-      const lastProcessed = args.lastProcessedTimestamps?.[batch.userId];
-
-      // Include this batch if:
-      // 1. We've never processed a batch from this user, OR
-      // 2. This batch is newer than the last one we processed
-      return !lastProcessed || batch.batchTimestamp > lastProcessed;
-    });
+    return await ctx.db
+      .query("cursorBatches")
+      .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+      .unique();
   },
 });

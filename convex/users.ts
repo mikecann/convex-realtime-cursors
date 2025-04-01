@@ -10,22 +10,8 @@ export const createUser = mutation({
     const userId = await ctx.db.insert("users", {
       name: args.name,
       emoji: args.emoji,
-      lastUpdate: Date.now(),
     });
     return { userId };
-  },
-});
-
-export const updateCursor = mutation({
-  args: {
-    userId: v.id("users"),
-    cursorX: v.number(),
-    cursorY: v.number(),
-  },
-  handler: async (ctx, args) => {
-    await ctx.db.patch(args.userId, {
-      lastUpdate: Date.now(),
-    });
   },
 });
 
@@ -41,11 +27,6 @@ export const getUser = query({
 export const getActiveUsers = query({
   args: {},
   handler: async (ctx) => {
-    // Get users who have been active in the last 30 seconds
-    const thirtySecondsAgo = Date.now() - 30_000;
-    return await ctx.db
-      .query("users")
-      .filter((q) => q.gt(q.field("lastUpdate"), thirtySecondsAgo))
-      .collect();
+    return await ctx.db.query("users").collect();
   },
 });

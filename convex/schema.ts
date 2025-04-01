@@ -8,7 +8,7 @@ export default defineSchema({
       v.object({
         x: v.number(),
         y: v.number(),
-        timestamp: v.number(),
+        timeSinceBatchStart: v.number(),
       }),
     ),
     batchTimestamp: v.number(),
@@ -17,6 +17,5 @@ export default defineSchema({
   users: defineTable({
     name: v.string(),
     emoji: v.string(),
-    lastUpdate: v.number(),
   }),
 });

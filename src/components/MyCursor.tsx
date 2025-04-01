@@ -12,13 +12,14 @@ interface MyCursorProps {
 interface CursorPosition {
   x: number;
   y: number;
-  timestamp: number;
+  timeSinceBatchStart: number;
 }
 
 export function MyCursor({ userId, emoji, name }: MyCursorProps) {
   // Refs for DOM and cursor state
   const cursorRef = useRef<HTMLDivElement>(null);
   const movementBatchRef = useRef<CursorPosition[]>([]);
+  const batchStartTime = useRef<number>(Date.now());
 
   // Convex mutation
   const storeCursorBatch = useMutation(api.cursors.storeCursorBatch);
@@ -31,7 +32,7 @@ export function MyCursor({ userId, emoji, name }: MyCursorProps) {
       const newPosition = {
         x: e.clientX,
         y: e.clientY,
-        timestamp: Date.now(),
+        timeSinceBatchStart: Date.now() - batchStartTime.current,
       };
 
       // Update cursor position
@@ -49,16 +50,19 @@ export function MyCursor({ userId, emoji, name }: MyCursorProps) {
   // Send batched cursor movements every second
   useEffect(() => {
     const sendBatchInterval = setInterval(() => {
-      if (movementBatchRef.current.length > 0) {
-        // Send the batch to the server
-        storeCursorBatch({
-          userId,
-          movements: movementBatchRef.current,
-        });
+      if (movementBatchRef.current.length == 0) return;
 
-        // Clear the batch
-        movementBatchRef.current = [];
-      }
+      console.log(`storing..`, movementBatchRef.current);
+
+      // Send the batch to the server
+      storeCursorBatch({
+        userId,
+        movements: movementBatchRef.current,
+      }).catch((e) => console.error(e));
+
+      // Clear the batch
+      movementBatchRef.current = [];
+      batchStartTime.current = Date.now();
     }, 1000);
 
     return () => clearInterval(sendBatchInterval);
