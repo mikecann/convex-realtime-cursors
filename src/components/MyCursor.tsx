@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { Id } from "../../convex/_generated/dataModel";
 import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
+import { useSettings } from "../contexts/SettingsContext";
 
 interface MyCursorProps {
   userId: Id<"users">;
@@ -18,6 +19,7 @@ interface CursorPosition {
 const SAMPLING_INTERVAL_MS = 10; // Sample every 5ms
 
 export function MyCursor({ userId, emoji, name }: MyCursorProps) {
+  const { settings } = useSettings();
   // Refs for DOM and cursor state
   const cursorRef = useRef<HTMLDivElement>(null);
   const movementBatchRef = useRef<CursorPosition[]>([]);
@@ -39,7 +41,7 @@ export function MyCursor({ userId, emoji, name }: MyCursorProps) {
       const now = Date.now();
 
       // If the last sample was too recent, don't add this one to the batch
-      if (now - lastSampleTime.current < SAMPLING_INTERVAL_MS) return;
+      if (now - lastSampleTime.current < settings.samplingInterval) return;
 
       // Update last sample time
       lastSampleTime.current = now;
@@ -54,9 +56,9 @@ export function MyCursor({ userId, emoji, name }: MyCursorProps) {
 
     window.addEventListener("mousemove", handleMouseMove);
     return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, []);
+  }, [settings.samplingInterval]);
 
-  // Send batched cursor movements every second
+  // Send batched cursor movements based on batch interval
   useEffect(() => {
     const sendBatchInterval = setInterval(() => {
       // Always reset the batch start time each tick
@@ -73,10 +75,10 @@ export function MyCursor({ userId, emoji, name }: MyCursorProps) {
 
       // Clear the batch
       movementBatchRef.current = [];
-    }, 1000);
+    }, settings.batchInterval);
 
     return () => clearInterval(sendBatchInterval);
-  }, [storeCursorBatch, userId]);
+  }, [storeCursorBatch, userId, settings.batchInterval]);
 
   return (
     <div

@@ -5,6 +5,8 @@ import { UserSetup } from "./components/UserSetup";
 import { Canvas } from "./components/Canvas";
 import { Id } from "../convex/_generated/dataModel";
 import { makeUseQueryWithStatus } from "convex-helpers/react";
+import { SettingsProvider } from "./contexts/SettingsContext";
+import { Settings } from "./components/Settings";
 
 export const useQueryWithStatus = makeUseQueryWithStatus(useQueries);
 
@@ -43,5 +45,10 @@ export default function App() {
 
   if (!user) return <div>Loading...</div>;
 
-  return <Canvas userId={userId} emoji={user.emoji} name={user.name} />;
+  return (
+    <SettingsProvider>
+      <Canvas userId={userId} emoji={user.emoji} name={user.name} />
+      <Settings />
+    </SettingsProvider>
+  );
 }
