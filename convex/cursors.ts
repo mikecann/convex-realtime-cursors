@@ -23,14 +23,12 @@ export const storeCursorBatch = mutation({
       // Replace existing batch with new one
       return await ctx.db.patch(existingBatch._id, {
         movements: args.movements,
-        batchTimestamp: Date.now(),
       });
 
     // Create a new batch if none exists
     await ctx.db.insert("cursorBatches", {
       userId: args.userId,
       movements: args.movements,
-      batchTimestamp: Date.now(),
     });
   },
 });

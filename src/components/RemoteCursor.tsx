@@ -1,7 +1,8 @@
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import { Id } from "../../convex/_generated/dataModel";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
+import { useAnimationFrame } from "../utils/hooks";
 
 interface RemoteCursorProps {
   userId: Id<"users">;
@@ -10,7 +11,7 @@ interface RemoteCursorProps {
 interface CursorPosition {
   x: number;
   y: number;
-  timestamp: number;
+  timeSinceBatchStart: number;
 }
 
 interface CursorBatch {
@@ -23,14 +24,46 @@ interface CursorBatch {
 export function RemoteCursor({ userId }: RemoteCursorProps) {
   // Refs for tracking state
   const containerRef = useRef<HTMLDivElement>(null);
+  const movementsQueueRef = useRef<CursorPosition[]>([]);
+  const batchStartTimeRef = useRef<number | null>(null);
 
   const user = useQuery(api.users.getUser, { userId });
   const cursorBatch = useQuery(api.cursors.getCursorBatch, { userId });
 
+  // Add new movements to the queue when a new batch arrives
   useEffect(() => {
     if (!cursorBatch) return;
+
+    // Store the batch start time and add new movements to the queue
+    batchStartTimeRef.current = Date.now();
+    movementsQueueRef.current = [
+      ...movementsQueueRef.current,
+      ...cursorBatch.movements,
+    ].sort((a, b) => a.timeSinceBatchStart - b.timeSinceBatchStart);
+
     console.log(`batch changed`, user?.name, cursorBatch);
-  }, [cursorBatch?.batchTimestamp]);
+  }, [cursorBatch, user?.name]);
+
+  // Animation loop using our custom hook
+  useAnimationFrame(() => {
+    if (!batchStartTimeRef.current) return;
+
+    const elapsedSinceBatchStart = Date.now() - batchStartTimeRef.current;
+
+    // Process movements that are due to be played
+    while (
+      movementsQueueRef.current.length > 0 &&
+      movementsQueueRef.current[0].timeSinceBatchStart <= elapsedSinceBatchStart
+    ) {
+      const movement = movementsQueueRef.current.shift();
+
+      // Update cursor position
+      if (containerRef.current && movement) {
+        containerRef.current.style.left = `${movement.x}px`;
+        containerRef.current.style.top = `${movement.y}px`;
+      }
+    }
+  }, []);
 
   if (!user) return null;
   if (!cursorBatch) return null;

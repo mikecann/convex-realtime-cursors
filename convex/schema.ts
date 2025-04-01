@@ -11,7 +11,6 @@ export default defineSchema({
         timeSinceBatchStart: v.number(),
       }),
     ),
-    batchTimestamp: v.number(),
   }).index("by_userId", ["userId"]),
 
   users: defineTable({
