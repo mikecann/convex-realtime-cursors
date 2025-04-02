@@ -16,11 +16,12 @@ export function RemoteCursor({ userId }: RemoteCursorProps) {
   const batchStartTimeRef = useRef<number>(0);
 
   const user = useQuery(api.users.getUser, { userId });
-  const cursorBatch = useQuery(api.cursors.getCursorBatch, { userId });
+  const cursorBatch = useQuery(api.cursors.find, { userId });
 
   // Add new batch to the queue when it arrives
   useEffect(() => {
     if (!cursorBatch) return;
+    console.log(`${user?.name} batch updated`, cursorBatch);
     batchQueueRef.current.push(cursorBatch);
   }, [cursorBatch]);
 
@@ -47,11 +48,12 @@ export function RemoteCursor({ userId }: RemoteCursorProps) {
 
     // Process movements that are due
     while (currentBatch.movements.length > 0) {
-      // Check if its time to action on this yet
+      // Check if its time to action on this yet (we assume the batch is sorted by time)
+      // We also cap the time to 1 second to avoid any wierdness from the user around time
       const movement = currentBatch.movements[0];
       if (Math.min(movement.timeSinceBatchStart, 1000) > elapsed) break;
 
-      // Remove this movement from the array
+      // Remove this movement from the array as it has now been played
       currentBatch.movements.shift();
 
       // Update the cursor position with the latest movement

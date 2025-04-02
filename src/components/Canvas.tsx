@@ -1,18 +1,14 @@
-import { Id } from "../../convex/_generated/dataModel";
 import { MyCursor } from "./MyCursor";
 import { OtherCursors } from "./OtherCursors";
+import { useMe } from "../contexts/MeContext";
 
-interface CanvasProps {
-  userId: Id<"users">;
-  emoji: string;
-  name: string;
-}
-
-export function Canvas({ userId, emoji, name }: CanvasProps) {
+export function Canvas() {
+  const { me } = useMe();
+  if (!me) return null;
   return (
     <div className="fixed inset-0 bg-slate-50">
-      <MyCursor userId={userId} emoji={emoji} name={name} />
-      <OtherCursors userId={userId} />
+      <MyCursor me={me} />
+      <OtherCursors myUserId={me._id} />
     </div>
   );
 }

@@ -1,4 +1,6 @@
 import { useEffect, useRef } from "react";
+import { useQueries } from "convex/react";
+import { makeUseQueryWithStatus } from "convex-helpers/react";
 
 /**
  * Custom hook for using requestAnimationFrame with a dependency array similar to useEffect
@@ -37,3 +39,5 @@ export function useAnimationFrame(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
 }
+
+export const useQueryWithStatus = makeUseQueryWithStatus(useQueries);

@@ -4,10 +4,10 @@ import { api } from "../../convex/_generated/api";
 import { RemoteCursor } from "./RemoteCursor";
 
 interface OtherCursorsProps {
-  userId: Id<"users">;
+  myUserId: Id<"users">;
 }
 
-export function OtherCursors({ userId }: OtherCursorsProps) {
+export function OtherCursors({ myUserId }: OtherCursorsProps) {
   // Get list of active users
   const activeUsers = useQuery(api.users.getActiveUsers);
   if (!activeUsers) return null;
@@ -15,7 +15,7 @@ export function OtherCursors({ userId }: OtherCursorsProps) {
   return (
     <div className="fixed inset-0 pointer-events-none">
       {activeUsers
-        .filter((user) => user._id !== userId) // Exclude me
+        .filter((user) => user._id !== myUserId) // Exclude me
         .map((user) => (
           <RemoteCursor key={user._id} userId={user._id} />
         ))}

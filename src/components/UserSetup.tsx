@@ -2,17 +2,15 @@ import { useState } from "react";
 import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
+import { useMe } from "../contexts/MeContext";
 
 const EMOJIS = ["😊", "🐱", "🦊", "🐰", "🐼", "🐨", "🦁", "🐯", "🐸", "🦄"];
 
-export function UserSetup({
-  onComplete,
-}: {
-  onComplete: (userId: Id<"users">) => void;
-}) {
+export function UserSetup({}: {}) {
   const [name, setName] = useState("");
   const [emoji, setEmoji] = useState(EMOJIS[0]);
   const createUser = useMutation(api.users.createUser);
+  const { setUserId } = useMe();
 
   const shuffleEmoji = () => {
     const currentIndex = EMOJIS.indexOf(emoji);
@@ -25,7 +23,7 @@ export function UserSetup({
     if (!name.trim()) return;
 
     const { userId } = await createUser({ name: name.trim(), emoji });
-    onComplete(userId);
+    setUserId(userId);
   };
 
   return (

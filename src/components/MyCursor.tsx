@@ -3,12 +3,7 @@ import { Id } from "../../convex/_generated/dataModel";
 import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { useSettings } from "../contexts/SettingsContext";
-
-interface MyCursorProps {
-  userId: Id<"users">;
-  emoji: string;
-  name: string;
-}
+import { Me, useMe } from "../contexts/MeContext";
 
 interface CursorPosition {
   x: number;
@@ -16,8 +11,9 @@ interface CursorPosition {
   timeSinceBatchStart: number;
 }
 
-export function MyCursor({ userId, emoji, name }: MyCursorProps) {
+export function MyCursor({ me }: { me: Me }) {
   const { settings } = useSettings();
+
   // Refs for DOM and cursor state
   const cursorRef = useRef<HTMLDivElement>(null);
   const movementBatchRef = useRef<CursorPosition[]>([]);
@@ -25,7 +21,7 @@ export function MyCursor({ userId, emoji, name }: MyCursorProps) {
   const lastSampleTime = useRef<number>(0);
 
   // Convex mutation
-  const storeCursorBatch = useMutation(api.cursors.storeCursorBatch);
+  const storeCursorBatch = useMutation(api.cursors.store);
 
   // Create cursor DOM element and track movements
   useEffect(() => {
@@ -66,8 +62,9 @@ export function MyCursor({ userId, emoji, name }: MyCursorProps) {
       if (movementBatchRef.current.length == 0) return;
 
       // Send the batch to the server
+      console.log("Sending batch", movementBatchRef.current);
       storeCursorBatch({
-        userId,
+        userId: me._id,
         movements: movementBatchRef.current,
       }).catch((e) => console.error(e));
 
@@ -76,7 +73,7 @@ export function MyCursor({ userId, emoji, name }: MyCursorProps) {
     }, settings.batchInterval);
 
     return () => clearInterval(sendBatchInterval);
-  }, [storeCursorBatch, userId, settings.batchInterval]);
+  }, [storeCursorBatch, me._id, settings.batchInterval]);
 
   return (
     <div
@@ -86,9 +83,9 @@ export function MyCursor({ userId, emoji, name }: MyCursorProps) {
         transform: "translate(-50%, -50%)",
       }}
     >
-      <div className="text-4xl filter drop-shadow-md">{emoji}</div>
+      <div className="text-4xl filter drop-shadow-md">{me.emoji}</div>
       <div className="bg-slate-800 px-2 py-1 rounded-full text-sm text-white shadow-md">
-        {name}
+        {me.name}
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
-export const storeCursorBatch = mutation({
+export const store = mutation({
   args: {
     userId: v.id("users"),
     movements: v.array(
@@ -33,7 +33,7 @@ export const storeCursorBatch = mutation({
   },
 });
 
-export const getCursorBatch = query({
+export const find = query({
   args: {
     userId: v.id("users"),
   },
