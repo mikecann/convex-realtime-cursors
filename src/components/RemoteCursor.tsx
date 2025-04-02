@@ -16,7 +16,7 @@ export function RemoteCursor({ userId }: RemoteCursorProps) {
   const batchStartTimeRef = useRef<number>(0);
 
   const user = useQuery(api.users.getUser, { userId });
-  const cursorBatch = useQuery(api.cursors.find, { userId });
+  const cursorBatch = useQuery(api.cursorBatches.find, { userId });
 
   // Add new batch to the queue when it arrives
   useEffect(() => {

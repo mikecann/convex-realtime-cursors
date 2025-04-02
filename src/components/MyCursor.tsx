@@ -21,7 +21,7 @@ export function MyCursor({ me }: { me: Me }) {
   const lastSampleTime = useRef<number>(0);
 
   // Convex mutation
-  const storeCursorBatch = useMutation(api.cursors.store);
+  const storeCursorBatch = useMutation(api.cursorBatches.store);
 
   // Create cursor DOM element and track movements
   useEffect(() => {
