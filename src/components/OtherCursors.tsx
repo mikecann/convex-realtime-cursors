@@ -15,7 +15,7 @@ export function OtherCursors({ userId }: OtherCursorsProps) {
   return (
     <div className="fixed inset-0 pointer-events-none">
       {activeUsers
-        .filter((user) => user._id !== userId) // Exclude current user
+        .filter((user) => user._id !== userId) // Exclude me
         .map((user) => (
           <RemoteCursor key={user._id} userId={user._id} />
         ))}

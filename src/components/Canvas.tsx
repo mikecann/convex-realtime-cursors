@@ -11,10 +11,7 @@ interface CanvasProps {
 export function Canvas({ userId, emoji, name }: CanvasProps) {
   return (
     <div className="fixed inset-0 bg-slate-50">
-      {/* Render my cursor */}
       <MyCursor userId={userId} emoji={emoji} name={name} />
-
-      {/* Render other users' cursors */}
       <OtherCursors userId={userId} />
     </div>
   );

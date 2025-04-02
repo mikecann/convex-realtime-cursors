@@ -16,8 +16,6 @@ interface CursorPosition {
   timeSinceBatchStart: number;
 }
 
-const SAMPLING_INTERVAL_MS = 10; // Sample every 5ms
-
 export function MyCursor({ userId, emoji, name }: MyCursorProps) {
   const { settings } = useSettings();
   // Refs for DOM and cursor state

@@ -10,34 +10,16 @@ import { Settings } from "./components/Settings";
 
 export const useQueryWithStatus = makeUseQueryWithStatus(useQueries);
 
-const STORAGE_KEY = "canvas_user_id";
+
 
 export default function App() {
-  const [userId, setUserId] = useState<Id<"users"> | null>(() => {
-    // Try to get userId from localStorage during intialization
-    const stored = localStorage.getItem(STORAGE_KEY);
-    return stored ? (stored as Id<"users">) : null;
-  });
 
-  const { data: user, error } = useQueryWithStatus(
-    api.users.getUser,
-    userId ? { userId } : "skip",
-  );
-
-  useEffect(() => {
-    if (!error) return;
-    console.error(`error while getting user, resetting`, error);
-    localStorage.removeItem(STORAGE_KEY);
-    window.location.reload();
-  }, [error]);
 
   if (!userId) {
     return (
       <UserSetup
         onComplete={(newUserId: Id<"users">) => {
-          // Store the new userId in localStorage
-          localStorage.setItem(STORAGE_KEY, newUserId);
-          setUserId(newUserId);
+        
         }}
       />
     );

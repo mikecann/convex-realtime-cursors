@@ -24,7 +24,7 @@ export function RemoteCursor({ userId }: RemoteCursorProps) {
     batchQueueRef.current.push(cursorBatch);
   }, [cursorBatch]);
 
-  // Animation loop using our custom hook
+  // Animation loop playing back the cursor movements from the queue
   useAnimationFrame(() => {
     if (!containerRef.current) return;
 
