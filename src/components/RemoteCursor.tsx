@@ -1,8 +1,9 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Doc, Id } from "../../convex/_generated/dataModel";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { useAnimationFrame } from "../utils/hooks";
+import "./RemoteCursor.css";
 
 interface RemoteCursorProps {
   userId: Id<"users">;
@@ -14,6 +15,7 @@ export function RemoteCursor({ userId }: RemoteCursorProps) {
   const batchQueueRef = useRef<Doc<"cursorBatches">[]>([]);
   const currentBatchRef = useRef<Doc<"cursorBatches"> | null>(null);
   const batchStartTimeRef = useRef<number>(0);
+  const [isClicking, setIsClicking] = useState(false);
 
   const user = useQuery(api.users.getUser, { userId });
   const cursorBatch = useQuery(api.cursorBatches.find, { userId });
@@ -42,39 +44,50 @@ export function RemoteCursor({ userId }: RemoteCursorProps) {
     }
 
     // Otherwise, we are working on a batch
-    // So we need to check if any of the movements are due to be played
+    // So we need to check if any of the actions are due to be played
     const elapsed = Date.now() - batchStartTimeRef.current;
     const currentBatch = currentBatchRef.current;
 
-    // Process movements that are due
-    while (currentBatch.movements.length > 0) {
+    // Process actions that are due
+    while (currentBatch.actions.length > 0) {
       // Check if its time to action on this yet (we assume the batch is sorted by time)
       // We also cap the time to 1 second to avoid any wierdness from the user around time
-      const movement = currentBatch.movements[0];
-      if (Math.min(movement.timeSinceBatchStart, 1000) > elapsed) break;
+      const action = currentBatch.actions[0];
+      if (Math.min(action.timeSinceBatchStart, 1000) > elapsed) break;
 
-      // Remove this movement from the array as it has now been played
-      currentBatch.movements.shift();
+      // Remove this action from the array as it has now been played
+      currentBatch.actions.shift();
 
-      // Update the cursor position with the latest movement
-      containerRef.current.style.left = `${movement.x}px`;
-      containerRef.current.style.top = `${movement.y}px`;
+      // Update the cursor position with the latest action
+      containerRef.current.style.left = `${action.x}px`;
+      containerRef.current.style.top = `${action.y}px`;
+
+      // If this is a click, trigger the animations
+      if (action.kind === "click" && !isClicking) {
+        setIsClicking(true);
+        // Remove animation classes after they complete
+        setTimeout(() => {
+          setIsClicking(false);
+        }, 350); // Match the animation duration
+      }
     }
 
-    // If we have no movements left, we are done with this batch
-    if (currentBatch.movements.length === 0) currentBatchRef.current = null;
+    // If we have no actions left, we are done with this batch
+    if (currentBatch.actions.length === 0) {
+      currentBatchRef.current = null;
+    }
   }, []);
 
   if (!user) return null;
 
   return (
-    <div
-      ref={containerRef}
-      className="fixed left-0 top-0 flex flex-col items-center gap-1 z-10 pointer-events-none"
-      style={{ transform: "translate(-50%, -50%)" }}
-    >
-      <div className="text-4xl filter drop-shadow-md">{user.emoji}</div>
-      <div className="bg-slate-800 px-2 py-1 rounded-full text-sm text-white shadow-md">
+    <div ref={containerRef} className="cursor-container">
+      <div
+        className={`cursor-emoji ${isClicking ? "cursor-click cursor-flash" : ""}`}
+      >
+        {user.emoji}
+      </div>
+      <div className={`cursor-name ${isClicking ? "cursor-flash" : ""}`}>
         {user.name}
       </div>
     </div>

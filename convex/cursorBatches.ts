@@ -4,12 +4,21 @@ import { v } from "convex/values";
 export const store = mutation({
   args: {
     userId: v.id("users"),
-    movements: v.array(
-      v.object({
-        x: v.number(),
-        y: v.number(),
-        timeSinceBatchStart: v.number(),
-      }),
+    actions: v.array(
+      v.union(
+        v.object({
+          kind: v.literal("movement"),
+          x: v.number(),
+          y: v.number(),
+          timeSinceBatchStart: v.number(),
+        }),
+        v.object({
+          kind: v.literal("click"),
+          x: v.number(),
+          y: v.number(),
+          timeSinceBatchStart: v.number(),
+        }),
+      ),
     ),
   },
   handler: async (ctx, args) => {
@@ -22,13 +31,13 @@ export const store = mutation({
     if (existingBatch)
       // Replace existing batch with new one
       return await ctx.db.patch(existingBatch._id, {
-        movements: args.movements.slice(0, 200),
+        actions: args.actions.slice(0, 200),
       });
 
     // Create a new batch if none exists
     await ctx.db.insert("cursorBatches", {
       userId: args.userId,
-      movements: args.movements.slice(0, 200),
+      actions: args.actions.slice(0, 200),
     });
   },
 });

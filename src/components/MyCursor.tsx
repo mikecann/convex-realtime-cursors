@@ -3,27 +3,28 @@ import { Id } from "../../convex/_generated/dataModel";
 import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { useSettings } from "../contexts/SettingsContext";
-import { Me, useMe } from "../contexts/MeContext";
+import { Me } from "../contexts/MeContext";
 
-interface CursorPosition {
+type CursorAction = {
   x: number;
   y: number;
   timeSinceBatchStart: number;
-}
+  kind: "movement" | "click";
+};
 
 export function MyCursor({ me }: { me: Me }) {
   const { settings } = useSettings();
 
   // Refs for DOM and cursor state
   const cursorRef = useRef<HTMLDivElement>(null);
-  const movementBatchRef = useRef<CursorPosition[]>([]);
+  const actionBatchRef = useRef<CursorAction[]>([]);
   const batchStartTime = useRef<number>(Date.now());
   const lastSampleTime = useRef<number>(0);
 
   // Convex mutation
   const storeCursorBatch = useMutation(api.cursorBatches.store);
 
-  // Create cursor DOM element and track movements
+  // Create cursor DOM element and track movements and clicks
   useEffect(() => {
     if (!cursorRef.current) return;
 
@@ -41,35 +42,50 @@ export function MyCursor({ me }: { me: Me }) {
       lastSampleTime.current = now;
 
       // Add to movement batch
-      movementBatchRef.current.push({
+      actionBatchRef.current.push({
+        kind: "movement",
         x: e.clientX,
         y: e.clientY,
         timeSinceBatchStart: now - batchStartTime.current,
       });
     };
 
+    const handleClick = (e: MouseEvent) => {
+      // Add click to batch immediately without sampling
+      actionBatchRef.current.push({
+        kind: "click",
+        x: e.clientX,
+        y: e.clientY,
+        timeSinceBatchStart: Date.now() - batchStartTime.current,
+      });
+    };
+
     window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
+    window.addEventListener("click", handleClick);
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("click", handleClick);
+    };
   }, [settings.samplingInterval]);
 
-  // Send batched cursor movements based on batch interval
+  // Send batched cursor actions based on batch interval
   useEffect(() => {
     const sendBatchInterval = setInterval(() => {
       // Always reset the batch start time each tick
       batchStartTime.current = Date.now();
 
       // If nothing in the batch we dont need to send anything
-      if (movementBatchRef.current.length == 0) return;
+      if (actionBatchRef.current.length == 0) return;
 
       // Send the batch to the server
-      console.log("Sending batch", movementBatchRef.current);
+      console.log("Sending batch", actionBatchRef.current);
       storeCursorBatch({
         userId: me._id,
-        movements: movementBatchRef.current,
+        actions: actionBatchRef.current,
       }).catch((e) => console.error(e));
 
       // Clear the batch
-      movementBatchRef.current = [];
+      actionBatchRef.current = [];
     }, settings.batchInterval);
 
     return () => clearInterval(sendBatchInterval);

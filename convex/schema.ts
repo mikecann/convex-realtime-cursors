@@ -9,12 +9,21 @@ export default defineSchema({
 
   cursorBatches: defineTable({
     userId: v.id("users"),
-    movements: v.array(
-      v.object({
-        x: v.number(),
-        y: v.number(),
-        timeSinceBatchStart: v.number(),
-      }),
+    actions: v.array(
+      v.union(
+        v.object({
+          kind: v.literal("movement"),
+          x: v.number(),
+          y: v.number(),
+          timeSinceBatchStart: v.number(),
+        }),
+        v.object({
+          kind: v.literal("click"),
+          x: v.number(),
+          y: v.number(),
+          timeSinceBatchStart: v.number(),
+        }),
+      ),
     ),
   }).index("by_userId", ["userId"]),
 });
