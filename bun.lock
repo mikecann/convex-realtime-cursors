@@ -2,7 +2,7 @@
   "lockfileVersion": 1,
   "workspaces": {
     "": {
-      "name": "convex-canvas",
+      "name": "convex-realtime-cursors",
       "dependencies": {
         "convex": "^1.21.0",
         "convex-helpers": "^0.1.76",
