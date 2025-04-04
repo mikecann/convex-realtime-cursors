@@ -22,13 +22,13 @@ export const store = mutation({
     if (existingBatch)
       // Replace existing batch with new one
       return await ctx.db.patch(existingBatch._id, {
-        movements: args.movements,
+        movements: args.movements.slice(0, 200),
       });
 
     // Create a new batch if none exists
     await ctx.db.insert("cursorBatches", {
       userId: args.userId,
-      movements: args.movements,
+      movements: args.movements.slice(0, 200),
     });
   },
 });
